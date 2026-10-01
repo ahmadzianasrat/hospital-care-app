@@ -213,4 +213,12 @@ describe('reserved patient numbers', () => {
     expect(await off.engine.topUp('f1')).toBe('offline')
     state.online = true
   })
+
+  it('force bypasses the threshold, so a button the person taps on purpose always reserves more', async () => {
+    const { engine } = setup({ rpc: async () => ({ data: [{ block_start: 1, block_end: 30 }], error: null }) })
+    await engine.topUp('f1') // 30 left, already above the default threshold of 8
+    expect(await engine.topUp('f1')).toBe('not_needed')
+    expect(await engine.topUp('f1', 30, 8, true)).toBe('ok')
+    expect(await engine.numbersLeft('f1')).toBe(60)
+  })
 })

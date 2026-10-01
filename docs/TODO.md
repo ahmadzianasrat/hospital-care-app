@@ -35,7 +35,7 @@ Legend: **[You]** = only you can do it. **[Claude]** = I build it when you say g
 
 ## Phase 1: Foundation and demo
 
-Steps: **1A** database (done, written) > **1B** login + duty status (done) > **1C** patients, triage, OPD queue (done) > **1D** quick treatment + referral (done) > **1E** offline queue (done). **Phase 1 is now complete.** You set everything up **after Phase 1 completes**, using `SETUP.md`.
+Steps: **1A** database (done, written) > **1B** login + duty status (done) > **1C** patients, triage, OPD queue (done) > **1D** quick treatment + referral (done) > **1E** offline queue (done) > **1F** wards, beds, orders, tasks (done) > **1G** nursing charts (done) > **1H** round mode (done) > **1I** OT scheduling (done) > **1J** staff roster + trainee programs (done). **Phase 1 scope is complete. Phase 2 (pilot) is underway - see `PILOT_PLAN.md`.** You set everything up **after Phase 1 completes**, using `SETUP.md`.
 
 - [ ] **[You]** Follow `GITHUB.md` first (put the code in GitHub)
 - [ ] **[You]** Then follow `SETUP.md` (Supabase project, 9 demo users, 5 SQL files, `npm test`, the 13-step walkthrough including offline tests 13a-13e) and send me the results
@@ -51,7 +51,16 @@ Steps: **1A** database (done, written) > **1B** login + duty status (done) > **1
 - [ ] **[You]** Show the demo to 2-3 nurses and ask: faster than paper?
 - [ ] **Gate:** nurses say it is faster than paper
 
-## Phase 2: Pilot 1 (triage and OPD)
+## Phase 2: Pilot (see PILOT_PLAN.md for the full playbook)
+
+- [ ] **[You]** Dry-run the entire app yourself end to end (PILOT_PLAN.md step 2)
+- [ ] **[You]** Show 2-3 trusted colleagues using fake data only; watch, don't help unless stuck
+- [ ] **[You]** Use "Report a problem" yourself for two weeks before asking anyone else to
+- [ ] **[You]** Identify the one decision-maker and propose the smallest possible pilot (one area, small
+      group, 2-4 weeks, paper running in parallel)
+- [ ] **[You]** Once approved: run the weekly cadence in PILOT_PLAN.md, review feedback daily at first
+
+## (Superseded) original Phase 2 draft
 
 - [ ] **[Claude]** X-ray/lab linking (patient ID + 6-digit number)
 - [ ] **[You]** Get pilot permission, hardware (tablet, UPS), and a champion nurse

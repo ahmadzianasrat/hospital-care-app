@@ -18,6 +18,27 @@ import OpdQueue from './OpdQueue'
 import OpdVisit from './OpdVisit'
 import Referrals from './Referrals'
 import ReferralForm from './ReferralForm'
+import WardList from './WardList'
+import WardBoard from './WardBoard'
+import AssignBed from './AssignBed'
+import WardPatient from './WardPatient'
+import OrderForm from './OrderForm'
+import WardCharts from './WardCharts'
+import VitalsChart from './VitalsChart'
+import CirculationChart from './CirculationChart'
+import FluidBalanceScreen from './FluidBalance'
+import Barthel from './Barthel'
+import CareNotes from './CareNotes'
+import RoundMode from './RoundMode'
+import FeedbackForm from './FeedbackForm'
+import OTBoard from './OTBoard'
+import BookSurgery from './BookSurgery'
+import SurgeryDetail from './SurgeryDetail'
+import RosterBuilder from './RosterBuilder'
+import RosterRequests from './RosterRequests'
+import TraineePrograms from './TraineePrograms'
+import TrainerHub from './TrainerHub'
+import LectureAttendance from './LectureAttendance'
 import Roster from './Roster'
 import DataCheck from './DataCheck'
 
@@ -44,6 +65,15 @@ export default function Workspace({ status }: { status: AccessStatus }) {
   const canTriage = TRIAGE_ROLES.includes(role) && has('triage')
   const canOpd = OPD_ROLES.includes(role) && has('opd')
   const canReferrals = TRIAGE_ROLES.includes(role) && has('referral')
+  const WARD_ROLES = ['nurse', 'team_leader', 'head_nurse', 'physio', 'midwife', 'doctor', 'chief_surgeon']
+  const canWards = WARD_ROLES.includes(role) && has('wards')
+  const canOrder = ['doctor', 'chief_surgeon'].includes(role)
+  const canDischargeWard = ['doctor', 'chief_surgeon'].includes(role)
+  const canOT = WARD_ROLES.includes(role) && has('surgery')
+  const canManageSurgery = ['nurse', 'team_leader', 'head_nurse', 'doctor', 'chief_surgeon'].includes(role)
+  const canOperate = ['doctor', 'chief_surgeon'].includes(role)
+  const canBuildRoster = ['admin', 'head_nurse'].includes(role) && has('roster')
+  const canTrain = ['trainer', 'admin', 'head_nurse'].includes(role) && has('training')
   const incoming = useIncomingReferralCount(status.facility_id, canReferrals)
 
   useEffect(() => {
@@ -69,6 +99,18 @@ export default function Workspace({ status }: { status: AccessStatus }) {
       key: 'referrals', label: incoming ? `Referrals (${incoming})` : 'Referrals', target: { name: 'referrals' },
       show: canReferrals, active: ['referrals', 'referral_form'].includes(view.name),
     },
+    {
+      key: 'wards', label: 'Wards', target: { name: 'wards' }, show: canWards,
+      active: [
+        'wards', 'ward', 'ward_patient', 'assign_bed', 'order_form', 'ward_charts',
+        'chart_vitals', 'chart_circulation', 'chart_fluids', 'chart_barthel', 'chart_notes',
+        'round_mode',
+      ].includes(view.name),
+    },
+    {
+      key: 'ot', label: 'OT', target: { name: 'ot' }, show: canOT,
+      active: ['ot', 'book_surgery', 'surgery_detail'].includes(view.name),
+    },
   ]
 
   return (
@@ -78,7 +120,7 @@ export default function Workspace({ status }: { status: AccessStatus }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-3 text-sm font-medium text-emerald-900">{flash}</div>
       )}
 
-      {view.name === 'home' && <DutyHome status={status} go={go} canPatients={canPatients} canTriage={canTriage} canOpd={canOpd} canReferrals={canReferrals} incoming={incoming} />}
+      {view.name === 'home' && <DutyHome status={status} go={go} canPatients={canPatients} canTriage={canTriage} canOpd={canOpd} canReferrals={canReferrals} incoming={incoming} canWards={canWards} canOT={canOT} canBuildRoster={canBuildRoster} canTrain={canTrain} />}
       {view.name === 'patients' && <Patients go={go} />}
       {view.name === 'register' && (
         <RegisterPatient
@@ -103,6 +145,44 @@ export default function Workspace({ status }: { status: AccessStatus }) {
         />
       )}
       {view.name === 'outbox' && <Outbox userId={status.staff_id} go={go} />}
+      {view.name === 'wards' && <WardList facilityId={status.facility_id} go={go} />}
+      {view.name === 'ward' && <WardBoard wardId={view.wardId} go={go} />}
+      {view.name === 'assign_bed' && (
+        <AssignBed encounterId={view.encounterId} facilityId={status.facility_id} go={go} notify={setFlash} />
+      )}
+      {view.name === 'ward_patient' && (
+        <WardPatient
+          encounterId={view.encounterId} go={go} notify={setFlash}
+          canOrder={canOrder} canDoTask={canWards} canDischarge={canDischargeWard}
+        />
+      )}
+      {view.name === 'order_form' && <OrderForm encounterId={view.encounterId} go={go} notify={setFlash} />}
+      {view.name === 'ward_charts' && <WardCharts encounterId={view.encounterId} go={go} />}
+      {view.name === 'chart_vitals' && <VitalsChart encounterId={view.encounterId} go={go} />}
+      {view.name === 'chart_circulation' && <CirculationChart encounterId={view.encounterId} go={go} />}
+      {view.name === 'chart_fluids' && <FluidBalanceScreen encounterId={view.encounterId} go={go} />}
+      {view.name === 'chart_barthel' && <Barthel encounterId={view.encounterId} go={go} />}
+      {view.name === 'chart_notes' && (
+        <CareNotes
+          encounterId={view.encounterId} go={go}
+          canNursing={['nurse', 'team_leader', 'head_nurse', 'doctor', 'chief_surgeon'].includes(role)}
+          canPhysio={['physio', 'doctor', 'chief_surgeon'].includes(role)}
+        />
+      )}
+      {view.name === 'round_mode' && <RoundMode wardId={view.wardId} go={go} notify={setFlash} canWrite={canOrder} />}
+      {view.name === 'feedback' && <FeedbackForm onBack={() => go({ name: 'home' })} />}
+      {view.name === 'ot' && <OTBoard facilityId={status.facility_id} go={go} />}
+      {view.name === 'book_surgery' && (
+        <BookSurgery encounterId={view.encounterId} facilityId={status.facility_id} go={go} notify={setFlash} />
+      )}
+      {view.name === 'surgery_detail' && (
+        <SurgeryDetail surgeryId={view.surgeryId} go={go} notify={setFlash} canManage={canManageSurgery} canOperate={canOperate} />
+      )}
+      {view.name === 'roster_builder' && <RosterBuilder facilityId={status.facility_id} go={go} />}
+      {view.name === 'roster_requests' && <RosterRequests go={go} />}
+      {view.name === 'trainee_programs' && <TraineePrograms facilityId={status.facility_id} go={go} />}
+      {view.name === 'trainer_hub' && <TrainerHub facilityId={status.facility_id} go={go} />}
+      {view.name === 'lecture_detail' && <LectureAttendance sessionId={view.sessionId} go={go} />}
 
       <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200">
         <div className="max-w-md mx-auto flex">
@@ -122,10 +202,10 @@ export default function Workspace({ status }: { status: AccessStatus }) {
 }
 
 function DutyHome({
-  status, go, canPatients, canTriage, canOpd, canReferrals, incoming,
+  status, go, canPatients, canTriage, canOpd, canReferrals, incoming, canWards, canOT, canBuildRoster, canTrain,
 }: {
   status: AccessStatus; go: (v: View) => void; canPatients: boolean; canTriage: boolean; canOpd: boolean
-  canReferrals: boolean; incoming: number
+  canReferrals: boolean; incoming: number; canWards: boolean; canOT: boolean; canBuildRoster: boolean; canTrain: boolean
 }) {
   const now = useNow()
   const clock = now.toLocaleTimeString('en-GB', { timeZone: FACILITY_TZ, hour: '2-digit', minute: '2-digit' })
@@ -136,7 +216,12 @@ function DutyHome({
     { label: 'Triage', target: { name: 'triage' }, enabled: canTriage },
     { label: 'OPD queue', target: { name: 'opd' }, enabled: canOpd },
     { label: incoming ? `Referrals (${incoming} new)` : 'Referrals', target: { name: 'referrals' }, enabled: canReferrals },
-    { label: 'Wards', enabled: false, note: 'Phase 3' },
+    { label: 'Wards', target: { name: 'wards' }, enabled: canWards },
+    { label: 'Operating theatre', target: { name: 'ot' }, enabled: canOT },
+    { label: 'Build roster', target: { name: 'roster_builder' }, enabled: canBuildRoster },
+    { label: 'Roster requests', target: { name: 'roster_requests' }, enabled: canBuildRoster },
+    { label: 'Trainee programs', target: { name: 'trainee_programs' }, enabled: canBuildRoster },
+    { label: 'Trainer tools', target: { name: 'trainer_hub' }, enabled: canTrain },
   ]
 
   return (
@@ -179,8 +264,11 @@ function DutyHome({
 
       <OutboxTile go={go} staffId={status.staff_id} />
       {canPatients && <OfflineReady facilityId={status.facility_id} />}
+      <button onClick={() => go({ name: 'feedback' })} className="w-full rounded-xl bg-white border border-slate-300 py-3 font-medium">
+        Report a problem
+      </button>
       <DataCheck />
-      <Roster staffId={status.staff_id} />
+      <Roster staffId={status.staff_id} facilityId={status.facility_id} />
       <button onClick={() => supabase.auth.signOut()} className="w-full rounded-xl bg-white border border-slate-300 py-3 font-medium">
         Sign out
       </button>

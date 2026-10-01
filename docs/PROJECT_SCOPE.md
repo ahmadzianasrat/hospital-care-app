@@ -94,6 +94,105 @@ Billing/insurance, full pharmacy ERP, full HR/payroll, PACS image storage, integ
 
 No approval from HQ, sync bugs, slower than paper, long support obligations, data hosting and ownership disputes, security context in Afghanistan.
 
+## Wards and orders (step 1F)
+
+- **Bed board:** each ward shows its beds, who's in them, and how many tasks are due or overdue. Admitted
+  patients with no bed yet show in a clear "waiting for a bed" list.
+- **Orders:** a doctor writes an order (medication, IV, diet, mobilization, x-ray, lab, physio, device, or
+  other) with a frequency (once, STAT, daily, twice daily, 3x, 4x, or continuous) and a duration. The database
+  generates the individual dated tasks automatically (e.g. 3x daily for 2 days = 6 tasks).
+  "Continuous" orders (like a running IV) create no timed tasks; they show as an active order nursing checks
+  during routine rounds instead.
+- **Tasks:** nurses (and physios, midwives) mark each task done or skipped (with a reason) at the bedside.
+  Stopping an order cancels its remaining future tasks.
+  Only a doctor or chief surgeon can write or stop an order; only a doctor or chief surgeon can discharge a
+  patient from the ward, which frees the bed, stops active orders, and cancels pending tasks.
+- **Not yet included (next increments):** the detailed nursing charts from the paper file (vitals grid,
+  circulation chart, GCS chart, fluid balance/intake-output, physio notes, Barthel index) and the full
+  multidisciplinary "round mode" screen. Wards and orders currently require a connection (not yet part of the
+  offline queue) - see the note below.
+
+## Nursing charts (step 1G)
+
+- **Vitals & GCS:** blood pressure, pulse, respiratory rate, oxygen saturation, temperature, and the Glasgow
+  Coma Scale (eyes/verbal/motor), plus pupils. Shock index and the GCS total are calculated automatically. A
+  note reminds staff to apply the pediatric response guide for patients under 2; the same 1-5/1-4/1-6 scale is
+  used underneath either way.
+- **Circulation:** per-limb movement, sensation, capillary refill, temperature, colour, and bleeding/oozing
+  flags - matching the hourly circulation paper. A bleeding entry is highlighted.
+- **Fluid balance:** intake (IV fluid, blood products, oral) and output (urine, stool, vomitus, drains,
+  insensible loss) logged as they happen; the database keeps a running balance for the whole stay and for the
+  last 24 hours.
+- **Barthel index:** the standard 10-item independence score (0-100), scored by a physio (or, when none is on
+  shift, a head nurse, doctor, or chief surgeon), with its history kept over time.
+- **Nursing and physio notes:** free-text, timestamped, and attributed, alongside the rest of the ward
+  documents. A nurse cannot write a physio note and vice versa.
+- Every entry is append-only, tied to the visit and facility, and only visible with the same clinical-access and
+  facility-isolation rules as the rest of the chart.
+- Not yet included: a full "round mode" screen that walks through every patient in order during the
+  multidisciplinary round; that is a good candidate for the next increment once this is tested.
+
+## Staff roster + nursing trainee programs (step 1J)
+
+- **Roster builder:** admin or head nurse picks a staff member and a week, and assigns a shift (and
+  optionally a ward) one day at a time. New entries are always drafts first; **Publish** makes a week's draft
+  shifts visible to everyone and enforceable for duty-based login.
+- **Trainee phase enforcement:** a trainee's current phase is computed automatically from their enrollment date
+  (no one updates it by hand). A phase marked "mornings only" (the first ~4 months, matching what you
+  described) can only be given the morning shift - the roster builder refuses anything else, with a clear
+  reason shown.
+- **Lecture-conflict enforcement:** a trainer's scheduled lecture automatically blocks that time on the
+  trainee's roster - trying to assign a shift that overlaps a lecture is refused, so the head nurse sees the
+  conflict before it happens rather than after.
+- **Lectures, attendance, and assessments:** a trainer schedules a lecture against the program, marks each
+  enrolled trainee present/absent/excused afterward, and records scored assessments (after-lectures,
+  intermediate, final exam) with an automatic pass/fail at 50%. A trainee can see their own scores; no one else
+  can except admin, head nurse, and trainers.
+- **Swap and leave requests:** any staff member can ask to take leave or have someone else cover one of their
+  own *published* shifts, with a reason. Admin or head nurse approves or denies. Approving a leave marks the
+  shift "off" (keeping the record, rather than deleting it); approving a cover reassigns the shift to the named
+  colleague, after checking they are not already working that day.
+- This is the roster/trainee system originally described in detail early in this project - it reuses the
+  duty-login roster tables that have existed since Phase 1A, adding the actual building, publishing, and
+  trainee-program tools on top of them.
+
+## OT scheduling (step 1I) - first Phase 2 add-on module
+
+- **Theatres:** a facility's operating theatres are set up like beds - a simple list, visible to any staff
+  member there (no patient information in the list itself).
+- **Booking a case:** from an admitted patient's ward screen, or from the OT board's "not yet booked" list, a
+  nurse, team leader, head nurse, doctor, or chief surgeon books a theatre, urgency, diagnosis, planned
+  procedure, anaesthesia type, ASA class, a surgeon (must be a doctor or chief surgeon at that facility), and a
+  date/time. The database refuses to double-book a theatre for an overlapping time, and refuses a theatre that
+  already has a case in progress.
+- **Starting and completing** a case are the two genuinely clinical acts, restricted to a doctor or chief
+  surgeon: starting records the actual start time; completing records findings, the procedure(s) actually done,
+  the outcome, and an optional surgical team list, and automatically creates the operative note (the existing
+  "surgery" document type) from that data - matching the paper Surgery form's findings/procedures/outcome/team
+  fields.
+- **Cancelling** a scheduled case requires a reason and is available to the same scheduling roles as booking.
+- Post-operative orders (medication, diet, mobilization, and so on) reuse the existing orders/tasks engine from
+  step 1F rather than duplicating it - a surgeon writes normal orders once the patient is back on the ward.
+
+## Round mode (step 1H) - completes the original Phase 1 scope
+
+- From a ward with admitted, bedded patients, **Start round** steps through them one at a time in bed order.
+- Each stop shows the latest vitals and GCS, pending/overdue tasks, the latest circulation check, 24-hour fluid
+  balance, and the latest Barthel score - everything the multidisciplinary team would otherwise be paging
+  through separate papers for.
+- A doctor (or chief surgeon) can leave a round note per patient, which is saved as they move to the next one;
+  other roles can still step through the same view to follow along, read-only.
+- "Open full chart" drops out of the round into the normal ward patient screen (for writing a new order, for
+  example) and back to the ward list when done.
+
+## Phase 2 kickoff
+
+Two things shipped alongside round mode specifically to support a real pilot, detailed in `PILOT_PLAN.md`:
+
+- **In-app feedback:** any staff member, even off duty, can report a problem from Home. Visible only to
+  themselves and to admin/head nurse/chief surgeon/coordinator at their facility. Not yet offline-capable.
+- A concrete, week-by-week pilot playbook, including what to do before ever asking the hospital for approval.
+
 ## Offline design (step 1E)
 
 - Every write goes through one offline queue (`src/lib/offline/engine.ts`). If it fails for a network reason, or
@@ -103,9 +202,10 @@ No approval from HQ, sync bugs, slower than paper, long support obligations, dat
 - A real rejection from the database (missing required field, patient not found) is shown immediately and never
   silently retried; the person fixes it from the Outbox screen.
 - Patient numbers can be reserved in blocks ahead of time, so registration works with no signal at all.
-- Not yet offline-capable: OPD claiming and quick treatment, since these involve real-time coordination between
-  people (only one doctor may hold a patient at a time). This is revisited in Phase 3 once local-server hosting
-  is decided (see the open architecture question in section 4).
+- Not yet offline-capable: OPD claiming and quick treatment, the entire ward/orders/tasks module (step 1F), and
+  the nursing charts (step 1G), since these involve real-time coordination between several people around the
+  same patient. This is revisited in Phase 3 once local-server hosting is decided (see the open architecture
+  question in section 4).
 
 ## 11. Decisions made
 

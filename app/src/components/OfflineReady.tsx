@@ -17,7 +17,7 @@ export default function OfflineReady({ facilityId }: { facilityId: string }) {
   async function topUp() {
     setBusy(true)
     setMsg(null)
-    const r = await engine.topUp(facilityId, 30, 0) // 0 = top up even if some remain, since the button was pressed on purpose
+    const r = await engine.topUp(facilityId, 30, 8, true) // force: the button was pressed on purpose
     setBusy(false)
     if (r === 'ok') {
       setMsg('Reserved 30 more patient numbers for offline use.')

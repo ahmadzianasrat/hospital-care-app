@@ -1,10 +1,11 @@
-# Hospital Care App (Phase 1, complete: 1A-1E)
+# Hospital Care App (Phase 1 complete: 1A-1J; Phase 2 underway)
 
-Screens: login, duty status, break-glass, patient search and registration, triage, OPD queue and visit with quick
-treatment, referrals (incoming, sent, to send), and an offline queue that saves work on the phone and sends it once
-the connection is back.
+Screens: login, duty status, break-glass, patient registration, triage, OPD, referrals, an offline queue, wards
+(bed board, orders, tasks, ward discharge), nursing charts, round mode, in-app feedback, OT scheduling, and now
+a staff roster builder with the full nursing trainee induction program.
 
-Full setup steps, including GitHub, are in `../docs/SETUP.md` and `../docs/GITHUB.md`.
+Full setup steps, including GitHub, are in `../docs/SETUP.md` and `../docs/GITHUB.md`. The pilot playbook is
+`../docs/PILOT_PLAN.md`.
 
 ## Run it locally
 1. Copy `.env.example` to `.env` and fill in your Supabase URL and anon/publishable key (never the service_role / secret key).
@@ -12,28 +13,47 @@ Full setup steps, including GitHub, are in `../docs/SETUP.md` and `../docs/GITHU
 3. `npm run dev`, then open the address it prints (usually http://localhost:5173).
 
 ## Run the automated tests
-`npm test` runs the offline-engine tests (17 checks: queueing, syncing in order, network vs. rejected errors,
-off-duty handling, retry/discard, reserved patient numbers).
+`npm test` runs the offline-engine tests (18 checks). All other business logic (roster, trainee programs, OT
+scheduling, and everything in earlier steps) is tested separately in the numbered SQL files under `../database/`.
+
+## Step 1J: staff roster + nursing trainee programs
+- `src/components/RosterBuilder.tsx`: admin/head nurse assigns shifts one day at a time, publishes a week
+- `src/components/RosterRequests.tsx`: approve/deny leave and cover requests
+- `src/components/Roster.tsx`: a staff member's own upcoming shifts, with a "Request a change" action
+- `src/components/TraineePrograms.tsx`: enroll a trainee, see their current phase
+- `src/components/TrainerHub.tsx`, `LectureAttendance.tsx`: schedule lectures, mark attendance, record scores
+- Database: `database/17_roster_training.sql`, tested in `database/18_tests_1J.sql`
+- **Two bugs were found and fixed by re-running the migration file a second time** (exactly what `SETUP.md`
+  recommends doing): missing `drop policy if exists` guards, and a seed insert that could have silently
+  duplicated the default program on a second run. See `../docs/SETUP.md` for details.
+
+## Step 1I: OT scheduling
+- `src/components/OTBoard.tsx`, `BookSurgery.tsx`, `SurgeryDetail.tsx`
+- Database: `database/15_ot_scheduling.sql`, tested in `database/16_tests_1I.sql`
+
+## Step 1H + Phase 2 kickoff
+- `src/components/RoundMode.tsx`, `FeedbackForm.tsx`
+- Database: `database/13_round_and_feedback.sql`, tested in `database/14_tests_1H.sql`
+
+## Step 1G: nursing charts
+- `src/components/WardCharts.tsx`, `VitalsChart.tsx`, `CirculationChart.tsx`, `FluidBalance.tsx`, `Barthel.tsx`, `CareNotes.tsx`
+- Database: `database/11_nursing_charts.sql`, tested in `database/12_tests_1G.sql`
+
+## Step 1F: wards, beds and orders
+- `src/components/WardList.tsx`, `WardBoard.tsx`, `AssignBed.tsx`, `OrderForm.tsx`, `WardPatient.tsx`
+- Database: `database/09_wards_orders.sql`, tested in `database/10_tests_1F.sql`
 
 ## How offline works, in short
 - Every action that changes data (register a patient, start a visit, complete triage, send a referral) goes
-  through `src/lib/offline/engine.ts`. If the request fails because of the network, or the app is already offline,
-  it is saved in the browser's storage (`idb-keyval`) instead of being lost.
-- A small bar (`SyncBar.tsx`) shows when you're offline and sends the saved queue automatically once you're back
-  online, in the order the actions were done.
-- A "wrong role or off duty" response is treated differently from a network problem: it is kept and retried
-  later (e.g. once your shift starts), not discarded.
-- A genuine rejection from the database (like a missing diagnosis) is never silently retried; it is shown so you
-  can fix it and try again from the Outbox screen (Home > "items saved on this phone").
-- Patient numbers: a facility can reserve a block of numbers while it has signal (Home > "Reserve 30 more
-  numbers"), so registration still works offline. Numbers are never reused.
-- Known limits of this prototype: OPD claiming and quick treatment still require a connection, since they
-  involve two people coordinating over the same patient in real time. Full offline coverage of the ward
-  workflow is a Phase 3 decision once we know whether facilities get a local server.
+  through `src/lib/offline/engine.ts`. A network failure saves it in the browser's storage (`idb-keyval`)
+  instead of losing it, and sends it automatically once you're back online, in order.
+- **Known limit:** OPD claiming, quick treatment, wards/orders, nursing charts, round mode, feedback, OT
+  scheduling, and the roster/trainee tools are all online-only for now, since most involve real-time
+  coordination between several people. This is revisited in Phase 3 once local-server hosting is decided.
 
 ## Files worth knowing
-- `src/lib/offline/engine.ts` + `engine.test.ts`: the queue itself, fully unit-tested, no Supabase needed to test it
-- `src/lib/offline/context.tsx`: connects the engine to Supabase and to the browser's storage
-- `src/lib/offline/useEncounterView.ts`: shows a visit whether it's on the server or only on this phone
+- `src/lib/offline/engine.ts` + `engine.test.ts`: the offline queue, fully unit-tested
+- `src/lib/offline/context.tsx`, `useEncounterView.ts`: connect the engine to Supabase and merge server/local state
+- `src/hooks.ts` (`useAccessStatus`): the duty-status check that tolerates being offline
 - `src/components/SyncBar.tsx`, `Outbox.tsx`, `OfflineReady.tsx`: the offline UI
 - `src/components/Workspace.tsx`: tabs, module switching per facility type

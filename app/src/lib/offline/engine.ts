@@ -311,8 +311,8 @@ export class OfflineEngine {
     await this.deps.store.set(`blocks:${facilityId}`, r)
     return seq
   }
-  async topUp(facilityId: string, count = 30, threshold = 8): Promise<'ok' | 'not_needed' | 'offline' | 'error'> {
-    if ((await this.numbersLeft(facilityId)) >= threshold) return 'not_needed'
+  async topUp(facilityId: string, count = 30, threshold = 8, force = false): Promise<'ok' | 'not_needed' | 'offline' | 'error'> {
+    if (!force && (await this.numbersLeft(facilityId)) >= threshold) return 'not_needed'
     if (!this.deps.isOnline()) return 'offline'
     let res: RpcResult
     try {
