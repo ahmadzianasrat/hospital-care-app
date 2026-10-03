@@ -56,14 +56,14 @@ set local role authenticated;
 select public.start_visit((select id from public.patients where display_id = '90002HL'));
 select public.complete_triage((select id from public.encounters order by created_at desc limit 1), 'orange', 'opd', '{"injury_description":"x"}'::jsonb);
 select public.claim_opd((select id from public.encounters order by created_at desc limit 1));
-select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"x"}'::jsonb);
+select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"Test diagnosis"}'::jsonb);
 select public.assign_bed((select id from public.encounters order by created_at desc limit 1),
   (select b.id from public.beds b join public.wards w on w.id = b.ward_id where w.code = 'ALPHA' and b.code = '1'));
 
 select public.start_visit((select id from public.patients where display_id = '90003HL'));
 select public.complete_triage((select id from public.encounters where patient_id = (select id from public.patients where display_id = '90003HL') order by created_at desc limit 1), 'orange', 'opd', '{"injury_description":"x"}'::jsonb);
 select public.claim_opd((select id from public.encounters where patient_id = (select id from public.patients where display_id = '90003HL') order by created_at desc limit 1));
-select public.complete_opd((select id from public.encounters where patient_id = (select id from public.patients where display_id = '90003HL') order by created_at desc limit 1), 'admit', '{"diagnosis":"x"}'::jsonb);
+select public.complete_opd((select id from public.encounters where patient_id = (select id from public.patients where display_id = '90003HL') order by created_at desc limit 1), 'admit', '{"diagnosis":"Test diagnosis"}'::jsonb);
 select public.assign_bed((select id from public.encounters where patient_id = (select id from public.patients where display_id = '90003HL') order by created_at desc limit 1),
   (select b.id from public.beds b join public.wards w on w.id = b.ward_id where w.code = 'ALPHA' and b.code = '1'));
 rollback;

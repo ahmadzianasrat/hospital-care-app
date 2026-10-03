@@ -102,6 +102,16 @@ internet or Supabase project.
 | 44 | Repeat with **Ask for cover** on a different shift, naming **nurse.ahmad@demo.test** as cover; approve it, and confirm the shift now belongs to Ahmad |
 | 13 | Test the allergy warning: register a patient with allergy "penicillin", start a visit, triage to OPD, take the patient as a doctor, and add a treatment with drug "Penicillin V". A red warning needs a tick before you can save |
 
+## Fixed in the test files themselves (3 Oct)
+- **Test P (`14_tests_1H.sql`) failed with "Diagnosis is required."** This was a bug in the *test script*, not
+  the app: the test passed `diagnosis: "x"` (1 character) to `complete_opd`, which correctly requires at least
+  2 characters, so it failed one step before ever reaching `add_round_note` - the thing the test was actually
+  meant to check. The same mistake was also sitting in two tests in `10_tests_1F.sql` and two in
+  `16_tests_1I.sql`. All five are fixed to use a real diagnosis string; `add_round_note` itself was never broken.
+- If you already ran the old copies and got "Diagnosis is required" on a test that wasn't supposed to be
+  checking that, redownload this file and re-run the affected test. No database change is needed - only the
+  test text changed.
+
 ## Fixed after the fourth round of testing (30 Sep, step 1J)
 - **The whole migration file failed to re-run.** Every new Row Level Security policy was created without a
   `drop policy if exists` guard first, so running the file a second time (which `SETUP.md` always recommends as

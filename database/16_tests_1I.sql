@@ -46,7 +46,7 @@ set local role authenticated;
 select public.start_visit((select id from public.patients where display_id = '90002HL'));
 select public.complete_triage((select id from public.encounters order by created_at desc limit 1), 'orange', 'opd', '{"injury_description":"x"}'::jsonb);
 select public.claim_opd((select id from public.encounters order by created_at desc limit 1));
-select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"x"}'::jsonb);
+select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"Test diagnosis"}'::jsonb);
 select public.book_surgery(
   (select id from public.encounters order by created_at desc limit 1),
   (select id from public.theatres where code = 'OT2' and facility_id = (select id from public.facilities where code = 'HL')),
@@ -73,7 +73,7 @@ set local role authenticated;
 select public.start_visit((select id from public.patients where display_id = '90002HL'));
 select public.complete_triage((select id from public.encounters order by created_at desc limit 1), 'orange', 'opd', '{"injury_description":"x"}'::jsonb);
 select public.claim_opd((select id from public.encounters order by created_at desc limit 1));
-select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"x"}'::jsonb);
+select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"Test diagnosis"}'::jsonb);
 select public.book_surgery(
   (select id from public.encounters order by created_at desc limit 1),
   (select id from public.theatres where code = 'OT1' and facility_id = (select id from public.facilities where code = 'HL')),

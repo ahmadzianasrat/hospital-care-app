@@ -13,7 +13,7 @@ set local role authenticated;
 select public.start_visit((select id from public.patients where display_id = '90002HL'));
 select public.complete_triage((select id from public.encounters order by created_at desc limit 1), 'orange', 'opd', '{"injury_description":"x"}'::jsonb);
 select public.claim_opd((select id from public.encounters order by created_at desc limit 1));
-select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"x"}'::jsonb);
+select public.complete_opd((select id from public.encounters order by created_at desc limit 1), 'admit', '{"diagnosis":"Femur fracture"}'::jsonb);
 select data->>'text' from public.add_round_note((select id from public.encounters order by created_at desc limit 1), 'Improving, continue current plan');
 rollback;
 
