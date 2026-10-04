@@ -24,7 +24,7 @@ select public.book_surgery(
   (select id from public.theatres where code = 'OT1' and facility_id = (select id from public.facilities where code = 'HL')),
   'emergency', 'Femur fracture', 'ORIF femur', 'general', 'II',
   '2026-10-01T10:00:00+00', '2026-10-01T11:00:00+00',
-  (select id from public.staff s join auth.users u on u.id = s.user_id where u.email = 'doctor@demo.test'));
+  (select id from public.staff where full_name = 'Dr Demo Doctor'));
 
 -- overlapping booking in the same theatre - expect an error
 select public.book_surgery(
@@ -32,7 +32,7 @@ select public.book_surgery(
   (select id from public.theatres where code = 'OT1' and facility_id = (select id from public.facilities where code = 'HL')),
   'elective', 'Test', 'Test procedure', 'spinal', 'I',
   '2026-10-01T10:30:00+00', '2026-10-01T11:30:00+00',
-  (select id from public.staff s join auth.users u on u.id = s.user_id where u.email = 'doctor@demo.test'));
+  (select id from public.staff where full_name = 'Dr Demo Doctor'));
 rollback;
 
 -- TEST U: full theatre journey - start, complete, and the operative note it creates.
@@ -52,7 +52,7 @@ select public.book_surgery(
   (select id from public.theatres where code = 'OT2' and facility_id = (select id from public.facilities where code = 'HL')),
   'emergency', 'Femur fracture', 'ORIF femur', 'general', 'II',
   '2026-10-01T14:00:00+00', '2026-10-01T15:00:00+00',
-  (select id from public.staff s join auth.users u on u.id = s.user_id where u.email = 'doctor@demo.test'));
+  (select id from public.staff where full_name = 'Dr Demo Doctor'));
 select public.start_surgery((select id from public.surgeries order by booked_at desc limit 1));
 select public.complete_surgery(
   (select id from public.surgeries order by booked_at desc limit 1),
@@ -77,17 +77,22 @@ select public.complete_opd((select id from public.encounters order by created_at
 select public.book_surgery(
   (select id from public.encounters order by created_at desc limit 1),
   (select id from public.theatres where code = 'OT1' and facility_id = (select id from public.facilities where code = 'HL')),
-  'emergency', 'x', 'y', 'general', 'I', '2026-10-05T10:00:00+00', '2026-10-05T11:00:00+00',
-  (select id from public.staff s join auth.users u on u.id = s.user_id where u.email = 'doctor@demo.test'));
+  'emergency', 'Test diagnosis', 'Test procedure', 'general', 'I', '2026-10-05T10:00:00+00', '2026-10-05T11:00:00+00',
+  (select id from public.staff where full_name = 'Dr Demo Doctor'));
 reset role;
 select set_config('request.jwt.claims', json_build_object('sub', id, 'role', 'authenticated')::text, true)
 from auth.users where email = 'nurse.zara@demo.test';
 set local role authenticated;
+-- this is the actual check: it must be the LAST statement, so its error is what you see
 select public.start_surgery((select id from public.surgeries order by booked_at desc limit 1));
 rollback;
 
 -- TEST W: facility isolation. A Kabul doctor cannot book on, or read, a Helmand case.
--- Expect: "Visit not found"; kb_sees_hl = 0; chief_sees > 0 (cross-facility read).
+-- This is written as THREE separate transactions (each with its own begin/rollback) rather than
+-- one, because once a statement errors, Postgres ignores every later statement in that same
+-- transaction - so a check placed after an expected error would never actually run.
+-- Run the whole block at once; expect, in order: an error "Visit not found"; kb_sees_hl = 0;
+-- chief_sees > 0 (cross-facility read).
 begin;
 select set_config('request.jwt.claims', json_build_object('sub', id, 'role', 'authenticated')::text, true)
 from auth.users where email = 'kb.doctor@demo.test';
@@ -97,9 +102,17 @@ select public.book_surgery(
   (select id from public.theatres where code = 'OT1' and facility_id = (select id from public.facilities where code = 'HL')),
   'elective', 'Test diagnosis', 'Test procedure', 'general', 'I',
   '2026-10-06T10:00:00+00', '2026-10-06T11:00:00+00',
-  (select id from public.staff s join auth.users u on u.id = s.user_id where u.email = 'kb.doctor@demo.test'));
+  (select id from public.staff where full_name = 'Kabul Doctor (demo)'));
+rollback;
+
+begin;
+select set_config('request.jwt.claims', json_build_object('sub', id, 'role', 'authenticated')::text, true)
+from auth.users where email = 'kb.doctor@demo.test';
+set local role authenticated;
 select count(*) as kb_sees_hl from public.surgeries where facility_id = (select id from public.facilities where code = 'HL');
-reset role;
+rollback;
+
+begin;
 select set_config('request.jwt.claims', json_build_object('sub', id, 'role', 'authenticated')::text, true)
 from auth.users where email = 'chief@demo.test';
 set local role authenticated;

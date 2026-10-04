@@ -102,6 +102,34 @@ internet or Supabase project.
 | 44 | Repeat with **Ask for cover** on a different shift, naming **nurse.ahmad@demo.test** as cover; approve it, and confirm the shift now belongs to Ahmad |
 | 13 | Test the allergy warning: register a patient with allergy "penicillin", start a visit, triage to OPD, take the patient as a doctor, and add a treatment with drug "Penicillin V". A red warning needs a tick before you can save |
 
+## Fixed in the test files themselves (3 Oct, second pass)
+Two more real test-file bugs, both found by you actually running them (my own test harness used a
+simplified mock of `auth.users` that didn't enforce the same restriction real Supabase does, so neither
+of these showed up until a real Supabase project hit them):
+
+- **"Column reference 'id' is ambiguous."** Several tests looked up a staff member with
+  `select id from public.staff s join auth.users u on u.id = s.user_id where u.email = '...'` - since both
+  `staff` and `auth.users` have their own `id` column, a bare `id` in the SELECT list is genuinely
+  ambiguous. All of `16_tests_1I.sql` and most of `18_tests_1J.sql` used this pattern.
+- **"Permission denied for table users."** More importantly: in real Supabase, the `authenticated` role is
+  never granted SELECT on `auth.users` - only the SQL editor's own connection (effectively an admin role)
+  can read it directly. Every test file's very first lookup (`select set_config(...) from auth.users where
+  email = ...`) runs fine because it happens *before* `set local role authenticated`. But several tests in
+  `16_tests_1I.sql` and `18_tests_1J.sql` also queried `auth.users` *after* switching to the authenticated
+  role, to look up a second person's staff ID mid-test - and that's exactly what the authenticated role is
+  correctly blocked from doing. Fixed by looking those people up through `public.staff` by name instead
+  (which the `staff_read` policy already allows for anyone at the same facility), never touching
+  `auth.users` again after the role switch.
+- **A related structural issue, found while fixing the above:** three tests (Test V and Test W in
+  `16_tests_1I.sql`, Test AA in `18_tests_1J.sql`) put an intentionally-failing statement in the *middle*
+  of a transaction, with more checks after it. Once a statement errors, Postgres ignores every later
+  statement in that same transaction - so those later checks were never actually running; the SQL editor
+  would have shown a second, misleading "current transaction is aborted" error instead of the real result.
+  Fixed by splitting each of those three tests into separate `begin;`/`rollback;` transactions, run
+  back-to-back in the same paste, so every check in them is genuinely exercised.
+- I've since rebuilt my own test harness to enforce the same restriction on `auth.users` that real Supabase
+  does, specifically so this class of bug can't slip past my own testing again.
+
 ## Fixed in the test files themselves (3 Oct)
 - **Test P (`14_tests_1H.sql`) failed with "Diagnosis is required."** This was a bug in the *test script*, not
   the app: the test passed `diagnosis: "x"` (1 character) to `complete_opd`, which correctly requires at least
