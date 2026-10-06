@@ -39,6 +39,14 @@ import RosterRequests from './RosterRequests'
 import TraineePrograms from './TraineePrograms'
 import TrainerHub from './TrainerHub'
 import LectureAttendance from './LectureAttendance'
+import Dashboard from './Dashboard'
+import MassCasualtyBoard from './MassCasualtyBoard'
+import PrintChart from './PrintChart'
+import FacilitySwitcher from './FacilitySwitcher'
+import FeedbackReview from './FeedbackReview'
+import Wristband from './Wristband'
+import ScanPatient from './ScanPatient'
+import DonorReport from './DonorReport'
 import Roster from './Roster'
 import DataCheck from './DataCheck'
 
@@ -74,6 +82,14 @@ export default function Workspace({ status }: { status: AccessStatus }) {
   const canOperate = ['doctor', 'chief_surgeon'].includes(role)
   const canBuildRoster = ['admin', 'head_nurse'].includes(role) && has('roster')
   const canTrain = ['trainer', 'admin', 'head_nurse'].includes(role) && has('training')
+  const canDashboard = ['admin', 'head_nurse', 'chief_surgeon', 'coordinator'].includes(role)
+  const canExportReports = ['head_nurse', 'chief_surgeon', 'coordinator'].includes(role)
+  const canMassCasualty = PATIENT_VIEW_ROLES.includes(role) || role === 'team_leader'
+  const canSwitchFacility = ['head_nurse', 'chief_surgeon', 'coordinator'].includes(role)
+  const [viewFacilityId, setViewFacilityId] = useState(status.facility_id)
+  const viewingOther = viewFacilityId !== status.facility_id
+  const canReviewFeedback = ['admin', 'head_nurse'].includes(role)
+  const canDonorReport = ['admin', 'head_nurse', 'chief_surgeon', 'coordinator'].includes(role)
   const incoming = useIncomingReferralCount(status.facility_id, canReferrals)
 
   useEffect(() => {
@@ -120,7 +136,7 @@ export default function Workspace({ status }: { status: AccessStatus }) {
         <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-3 text-sm font-medium text-emerald-900">{flash}</div>
       )}
 
-      {view.name === 'home' && <DutyHome status={status} go={go} canPatients={canPatients} canTriage={canTriage} canOpd={canOpd} canReferrals={canReferrals} incoming={incoming} canWards={canWards} canOT={canOT} canBuildRoster={canBuildRoster} canTrain={canTrain} />}
+      {view.name === 'home' && <DutyHome status={status} go={go} canPatients={canPatients} canTriage={canTriage} canOpd={canOpd} canReferrals={canReferrals} incoming={incoming} canWards={canWards} canOT={canOT} canBuildRoster={canBuildRoster} canTrain={canTrain} canDashboard={canDashboard} canMassCasualty={canMassCasualty} canReviewFeedback={canReviewFeedback} canDonorReport={canDonorReport} />}
       {view.name === 'patients' && <Patients go={go} />}
       {view.name === 'register' && (
         <RegisterPatient
@@ -145,7 +161,12 @@ export default function Workspace({ status }: { status: AccessStatus }) {
         />
       )}
       {view.name === 'outbox' && <Outbox userId={status.staff_id} go={go} />}
-      {view.name === 'wards' && <WardList facilityId={status.facility_id} go={go} />}
+      {view.name === 'wards' && (
+        <div className="space-y-2">
+          {canSwitchFacility && <FacilitySwitcher homeFacilityId={status.facility_id} value={viewFacilityId} onChange={setViewFacilityId} />}
+          <WardList facilityId={viewFacilityId} go={go} readOnly={viewingOther} />
+        </div>
+      )}
       {view.name === 'ward' && <WardBoard wardId={view.wardId} go={go} />}
       {view.name === 'assign_bed' && (
         <AssignBed encounterId={view.encounterId} facilityId={status.facility_id} go={go} notify={setFlash} />
@@ -171,7 +192,12 @@ export default function Workspace({ status }: { status: AccessStatus }) {
       )}
       {view.name === 'round_mode' && <RoundMode wardId={view.wardId} go={go} notify={setFlash} canWrite={canOrder} />}
       {view.name === 'feedback' && <FeedbackForm onBack={() => go({ name: 'home' })} />}
-      {view.name === 'ot' && <OTBoard facilityId={status.facility_id} go={go} />}
+      {view.name === 'ot' && (
+        <div className="space-y-2">
+          {canSwitchFacility && <FacilitySwitcher homeFacilityId={status.facility_id} value={viewFacilityId} onChange={setViewFacilityId} />}
+          <OTBoard facilityId={viewFacilityId} go={go} readOnly={viewingOther} />
+        </div>
+      )}
       {view.name === 'book_surgery' && (
         <BookSurgery encounterId={view.encounterId} facilityId={status.facility_id} go={go} notify={setFlash} />
       )}
@@ -183,6 +209,18 @@ export default function Workspace({ status }: { status: AccessStatus }) {
       {view.name === 'trainee_programs' && <TraineePrograms facilityId={status.facility_id} go={go} />}
       {view.name === 'trainer_hub' && <TrainerHub facilityId={status.facility_id} go={go} />}
       {view.name === 'lecture_detail' && <LectureAttendance sessionId={view.sessionId} go={go} />}
+      {view.name === 'dashboard' && <Dashboard canExport={canExportReports} go={go} />}
+      {view.name === 'mass_casualty' && (
+        <div className="space-y-2">
+          {canSwitchFacility && <FacilitySwitcher homeFacilityId={status.facility_id} value={viewFacilityId} onChange={setViewFacilityId} />}
+          <MassCasualtyBoard facilityId={viewFacilityId} go={go} />
+        </div>
+      )}
+      {view.name === 'print_chart' && <PrintChart encounterId={view.encounterId} go={go} />}
+      {view.name === 'feedback_review' && <FeedbackReview go={go} />}
+      {view.name === 'wristband' && <Wristband patientId={view.patientId} go={go} />}
+      {view.name === 'scan_patient' && <ScanPatient go={go} />}
+      {view.name === 'donor_report' && <DonorReport go={go} />}
 
       <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200">
         <div className="max-w-md mx-auto flex">
@@ -203,9 +241,11 @@ export default function Workspace({ status }: { status: AccessStatus }) {
 
 function DutyHome({
   status, go, canPatients, canTriage, canOpd, canReferrals, incoming, canWards, canOT, canBuildRoster, canTrain,
+  canDashboard, canMassCasualty, canReviewFeedback, canDonorReport,
 }: {
   status: AccessStatus; go: (v: View) => void; canPatients: boolean; canTriage: boolean; canOpd: boolean
   canReferrals: boolean; incoming: number; canWards: boolean; canOT: boolean; canBuildRoster: boolean; canTrain: boolean
+  canDashboard: boolean; canMassCasualty: boolean; canReviewFeedback: boolean; canDonorReport: boolean
 }) {
   const now = useNow()
   const clock = now.toLocaleTimeString('en-GB', { timeZone: FACILITY_TZ, hour: '2-digit', minute: '2-digit' })
@@ -222,6 +262,11 @@ function DutyHome({
     { label: 'Roster requests', target: { name: 'roster_requests' }, enabled: canBuildRoster },
     { label: 'Trainee programs', target: { name: 'trainee_programs' }, enabled: canBuildRoster },
     { label: 'Trainer tools', target: { name: 'trainer_hub' }, enabled: canTrain },
+    { label: 'Dashboard', target: { name: 'dashboard' }, enabled: canDashboard },
+    { label: 'Mass casualty board', target: { name: 'mass_casualty' }, enabled: canMassCasualty },
+    { label: 'Feedback inbox', target: { name: 'feedback_review' }, enabled: canReviewFeedback },
+    { label: 'Scan patient QR', target: { name: 'scan_patient' }, enabled: canPatients },
+    { label: 'Donor / ministry report', target: { name: 'donor_report' }, enabled: canDonorReport },
   ]
 
   return (

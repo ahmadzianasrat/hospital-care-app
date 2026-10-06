@@ -288,9 +288,30 @@ export const ASSESSMENT_LABELS: Record<string, string> = {
   after_lectures: 'After lectures', intermediate: 'Intermediate', final_exam: 'Final exam',
 }
 
+export type SummaryRow = { facility_code: string; total_visits: number; currently_waiting: number; currently_admitted: number; discharged: number; referred_out: number }
+export type PriorityBreakdownRow = { facility_code: string; priority: string; visits: number }
+export type IncidentBreakdownRow = { facility_code: string; incident: string; visits: number }
+export type LosRow = { facility_code: string; discharged_count: number; avg_hours: number | null }
+export type OtStatsRow = { facility_code: string; completed_cases: number; emergency_cases: number; elective_cases: number; alive_count: number; deceased_count: number }
+export type ReferralStatsRow = { facility_code: string; sent: number; received: number; arrived: number; cancelled_sent: number }
+export type ExportRow = {
+  facility_code: string; display_id: string; full_name: string; age_years: number | null; sex: string
+  arrived_at: string; triage_priority: string | null; status: string; diagnosis: string | null
+}
+
+export type FacilityRow = { id: string; code: string; name: string; type: string }
+export type FeedbackRow = { id: string; message: string; screen: string | null; status: string; created_at: string; staff?: { full_name: string } | null }
+
 export type View =
   | { name: 'home' }
   | { name: 'feedback' }
+  | { name: 'feedback_review' }
+  | { name: 'wristband'; patientId: string }
+  | { name: 'scan_patient' }
+  | { name: 'donor_report' }
+  | { name: 'dashboard' }
+  | { name: 'mass_casualty' }
+  | { name: 'print_chart'; encounterId: string }
   | { name: 'roster_builder' }
   | { name: 'roster_requests' }
   | { name: 'trainee_programs' }

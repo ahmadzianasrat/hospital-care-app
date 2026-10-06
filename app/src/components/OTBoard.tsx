@@ -8,7 +8,7 @@ const dt = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: FA
 
 const URGENCY_STYLE: Record<string, string> = { emergency: 'bg-red-100 text-red-800', elective: 'bg-slate-100 text-slate-700' }
 
-export default function OTBoard({ facilityId, go }: { facilityId: string; go: (v: View) => void }) {
+export default function OTBoard({ facilityId, go, readOnly = false }: { facilityId: string; go: (v: View) => void; readOnly?: boolean }) {
   const [theatres, setTheatres] = useState<TheatreRow[]>([])
   const [cases, setCases] = useState<SurgeryRow[]>([])
   const [unbooked, setUnbooked] = useState<EncounterRow[]>([])
@@ -60,7 +60,12 @@ export default function OTBoard({ facilityId, go }: { facilityId: string; go: (v
           <h2 className="font-semibold text-amber-900">Admitted, not yet booked for surgery ({unbooked.length})</h2>
           {unbooked.map((e) => {
             const p = e.patients as PatientRow
-            return (
+            return readOnly ? (
+              <div key={e.id} className="w-full bg-white rounded-xl p-3 shadow opacity-75">
+                <span className="font-mono font-bold text-teal-800">{p?.display_id}</span> · {p?.full_name}
+                <span className="text-xs text-slate-500"> · {ageSex(p?.age_years, p?.sex)}</span>
+              </div>
+            ) : (
               <button key={e.id} onClick={() => go({ name: 'book_surgery', encounterId: e.id })} className="w-full text-left bg-white rounded-xl p-3 shadow">
                 <span className="font-mono font-bold text-teal-800">{p?.display_id}</span> · {p?.full_name}
                 <span className="text-xs text-slate-500"> · {ageSex(p?.age_years, p?.sex)}</span>
@@ -80,8 +85,9 @@ export default function OTBoard({ facilityId, go }: { facilityId: string; go: (v
             <p className="text-xs font-semibold text-slate-500">{t.name}</p>
             {rows.map((c) => {
               const p = c.encounters?.patients
+              const Wrapper = readOnly ? 'div' : 'button'
               return (
-                <button key={c.id} onClick={() => go({ name: 'surgery_detail', surgeryId: c.id })} className="w-full text-left bg-white rounded-xl shadow p-3">
+                <Wrapper key={c.id} onClick={readOnly ? undefined : () => go({ name: 'surgery_detail', surgeryId: c.id })} className={`w-full text-left bg-white rounded-xl shadow p-3 ${readOnly ? 'opacity-75' : ''}`}>
                   <div className="flex justify-between items-center">
                     <span className="font-mono font-bold text-teal-800">{p?.display_id}</span>
                     <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${URGENCY_STYLE[c.urgency]}`}>{c.urgency}</span>
@@ -91,7 +97,7 @@ export default function OTBoard({ facilityId, go }: { facilityId: string; go: (v
                     {c.status === 'in_progress' ? 'In progress since ' + dt(c.actual_start ?? c.scheduled_start) : dt(c.scheduled_start)}
                     {' · Dr ' + (c.surgeon?.full_name ?? '')}
                   </p>
-                </button>
+                </Wrapper>
               )
             })}
           </div>

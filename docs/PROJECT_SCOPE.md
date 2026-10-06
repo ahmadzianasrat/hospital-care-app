@@ -132,6 +132,59 @@ No approval from HQ, sync bugs, slower than paper, long support obligations, dat
 - Not yet included: a full "round mode" screen that walks through every patient in order during the
   multidisciplinary round; that is a good candidate for the next increment once this is tested.
 
+## Multi-facility rollout enabler + polish (step 1M)
+
+- **Facility switcher:** head nurse, chief surgeon, and coordinator - the roles that already have
+  cross-facility read access everywhere else in this app - can now switch which facility's Wards,
+  Operating Theatre, or Mass Casualty Board they are looking at, for situational awareness across sites.
+  This is deliberately **view-only**: switching to another facility disables tapping through to individual
+  patients or booking actions there, because every write in this app checks the signed-in staff member's
+  own facility, not whichever one happens to be on screen - the switcher only changes what they can see,
+  never what they can do elsewhere.
+- **Feedback inbox:** admin and head nurse can now review, mark reviewed, resolve, or reopen feedback
+  from inside the app (Home > Feedback inbox), instead of only through the Supabase table editor.
+- **QR wristband:** a printable label with a QR code encoding only the patient's ID (nothing else - a
+  lost or photographed wristband reveals no extra information), alongside their name, age, sex, blood
+  group, and allergy status.
+- **Scan to find a patient:** uses the browser's native camera barcode scanner where supported, with a
+  type-the-ID fallback everywhere else, so it keeps working even on devices or browsers without scanning
+  support.
+- **Donor / ministry report:** an aggregate-only, printable version of the dashboard - same underlying
+  data as step 1K's reports, but with zero patient names anywhere, so it is available to admin too
+  (matching the same privacy rule as the main dashboard's CSV export).
+- **None of this needed new database code.** Every piece here reuses functions, tables, and RLS policies
+  already built and tested in earlier steps.
+
+## Printable paper fallback + mass casualty board (step 1L)
+
+- **Print paper copy:** from an admitted patient's ward screen, or any past visit in a patient's record, a
+  clean black-on-white summary - demographics, allergies, triage findings, diagnosis, active orders, the last
+  12 vitals readings, recent circulation checks, and recent nursing/physio notes - ready for the browser's own
+  print dialog. This is a live snapshot pulled fresh each time, not a stored document, and it says so on the
+  printout. Needed no new database code at all - it only reads data every other screen already reads.
+- **Mass casualty board:** every patient currently in the system (waiting for triage, waiting for OPD, with a
+  doctor, or admitted - everyone short of discharged/referred/closed) in one view, grouped and colour-coded by
+  triage priority, refreshing every 10 seconds. Open to any clinical role, not just triage/OPD staff, since
+  situational awareness during a mass-casualty event matters to lab, radiology, and physio too. Like the print
+  fallback, this needed no new database code - it is a different way of looking at data the app already has.
+
+## Reports & dashboard (step 1K)
+
+- **Summary:** for a chosen date range, total visits, how many are currently waiting, admitted, or
+  discharged, per facility - every facility you have cross-facility read access to, or just your own
+  otherwise (the same rule used everywhere else in the app).
+- **Triage priority and incident-type breakdowns**, **length of stay** (arrival to final discharge,
+  whether that was straight from OPD or after a ward stay), **OT stats** (completed cases,
+  emergency/elective split, alive/deceased), and **referral stats** (sent/received/arrived).
+- **CSV export** of the underlying patient list for the same date range - but deliberately **not available
+  to admin**. Admin cannot read individual patients anywhere else in this app (by design, since admin
+  manages configuration, not patient care), so the dashboard keeps that same boundary: admin sees
+  aggregate counts only, while head nurse, chief surgeon, and coordinator - who already have
+  patient-identifying access elsewhere - can export the real list.
+- A plain nurse, doctor, or physio does not see the Dashboard tile at all; this is a management-level
+  view, matching who the original "reports and dashboards" scope item was written for (coordinators and
+  donors).
+
 ## Staff roster + nursing trainee programs (step 1J)
 
 - **Roster builder:** admin or head nurse picks a staff member and a week, and assigns a shift (and

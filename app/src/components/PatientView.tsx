@@ -96,6 +96,10 @@ export default function PatientView({
       <PatientHeader patient={patient} />
       <ErrorBox message={error} />
 
+      <button onClick={() => go({ name: 'wristband', patientId: patient.id })} className="w-full rounded-xl bg-white border border-slate-300 py-3 font-medium">
+        Print wristband / QR label
+      </button>
+
       {canStartVisit && (
         <button
           onClick={newVisit}
@@ -142,12 +146,17 @@ export default function PatientView({
         {visits.length === 0 && <p className="text-sm text-slate-500">No visits yet.</p>}
         <ul className="divide-y">
           {visits.map((v) => (
-            <li key={v.id} className="py-2 flex items-center justify-between text-sm">
-              <span>{new Date(v.arrived_at).toLocaleString('en-GB', { timeZone: 'Asia/Kabul', dateStyle: 'medium', timeStyle: 'short' })}</span>
-              <span className="flex items-center gap-2">
-                <PriorityBadge priority={v.triage_priority} />
-                <span className="text-slate-600">{STATUS_LABEL[v.status] ?? v.status}</span>
-              </span>
+            <li key={v.id} className="py-2 space-y-1 text-sm">
+              <div className="flex items-center justify-between">
+                <span>{new Date(v.arrived_at).toLocaleString('en-GB', { timeZone: 'Asia/Kabul', dateStyle: 'medium', timeStyle: 'short' })}</span>
+                <span className="flex items-center gap-2">
+                  <PriorityBadge priority={v.triage_priority} />
+                  <span className="text-slate-600">{STATUS_LABEL[v.status] ?? v.status}</span>
+                </span>
+              </div>
+              <button onClick={() => go({ name: 'print_chart', encounterId: v.id })} className="text-xs text-teal-700 underline">
+                Print paper copy
+              </button>
             </li>
           ))}
         </ul>

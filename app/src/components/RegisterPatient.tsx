@@ -139,12 +139,17 @@ export default function RegisterPatient({
           Send to triage now
         </button>
         {!offlineNote && (
-          <button
-            onClick={() => go({ name: 'patient', id: created.id })}
-            className="w-full rounded-xl bg-white border border-slate-300 py-3"
-          >
-            Open patient record
-          </button>
+          <>
+            <button onClick={() => go({ name: 'wristband', patientId: created.id })} className="w-full rounded-xl bg-white border border-slate-300 py-3">
+              Print wristband / QR label
+            </button>
+            <button
+              onClick={() => go({ name: 'patient', id: created.id })}
+              className="w-full rounded-xl bg-white border border-slate-300 py-3"
+            >
+              Open patient record
+            </button>
+          </>
         )}
         {offlineNote && (
           <button onClick={() => go({ name: 'patients' })} className="w-full rounded-xl bg-white border border-slate-300 py-3">

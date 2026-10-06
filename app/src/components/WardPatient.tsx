@@ -175,6 +175,10 @@ export default function WardPatient({
         </button>
       )}
 
+      <button onClick={() => go({ name: 'print_chart', encounterId })} className="w-full rounded-xl bg-white border border-slate-300 py-3 font-medium">
+        Print paper copy
+      </button>
+
       {canOrder && status === 'admitted' && (
         <button onClick={() => go({ name: 'order_form', encounterId })} className="w-full rounded-xl border border-teal-700 text-teal-800 font-semibold py-3">
           + New order

@@ -6,7 +6,7 @@ import { BackBar, Card, ErrorBox } from './ui'
 
 type WardCount = WardRow & { total: number; occupied: number }
 
-export default function WardList({ facilityId, go }: { facilityId: string; go: (v: View) => void }) {
+export default function WardList({ facilityId, go, readOnly = false }: { facilityId: string; go: (v: View) => void; readOnly?: boolean }) {
   const [wards, setWards] = useState<WardCount[] | null>(null)
   const [unassigned, setUnassigned] = useState<EncounterRow[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +53,11 @@ export default function WardList({ facilityId, go }: { facilityId: string; go: (
           <h2 className="font-semibold text-amber-900">Admitted, waiting for a bed ({unassigned.length})</h2>
           {unassigned.map((e) => {
             const p = e.patients as PatientRow
-            return (
+            return readOnly ? (
+              <div key={e.id} className="w-full bg-white rounded-xl p-3 shadow opacity-75">
+                <span className="font-mono font-bold text-teal-800">{p?.display_id}</span> · {p?.full_name}
+              </div>
+            ) : (
               <button
                 key={e.id} onClick={() => go({ name: 'assign_bed', encounterId: e.id })}
                 className="w-full text-left bg-white rounded-xl p-3 shadow"
@@ -66,7 +70,14 @@ export default function WardList({ facilityId, go }: { facilityId: string; go: (
       )}
 
       {wards === null && <p className="text-slate-500">Loading…</p>}
-      {wards?.map((w) => (
+      {wards?.map((w) => readOnly ? (
+        <div key={w.id} className="w-full bg-white rounded-xl shadow p-4 opacity-75">
+          <div className="flex justify-between items-center">
+            <p className="font-semibold">{w.name}</p>
+            <span className="text-sm font-mono">{w.occupied}/{w.total} beds</span>
+          </div>
+        </div>
+      ) : (
         <button key={w.id} onClick={() => go({ name: 'ward', wardId: w.id })} className="w-full text-left bg-white rounded-xl shadow p-4">
           <div className="flex justify-between items-center">
             <p className="font-semibold">{w.name}</p>

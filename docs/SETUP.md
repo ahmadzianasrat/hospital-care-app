@@ -24,8 +24,9 @@ Run in this order, one file at a time. Each should say "Success":
 8. `database/13_round_and_feedback.sql`
 9. `database/15_ot_scheduling.sql`
 10. `database/17_roster_training.sql`
+11. `database/19_reports.sql`
 
-(Steps 06, 08, 10, 12, 14, 16 and 18 are test files, covered below.)
+(Steps 06, 08, 10, 12, 14, 16, 18 and 20 are test files, covered below.)
 
 If a file fails: copy the exact error text and send it to me. Do not re-run blindly.
 
@@ -38,6 +39,7 @@ If a file fails: copy the exact error text and send it to me. Do not re-run blin
 - `database/14_tests_1H.sql`: tests P-S (round mode, feedback, and two bug fixes found while testing this step - see "Fixed after the second round of testing" below). Expected results are written in the comments of each test.
 - `database/16_tests_1I.sql`: tests T-W (OT scheduling, and two more bug fixes - see "Fixed after the third round of testing" below). Expected results are written in the comments of each test.
 - `database/18_tests_1J.sql`: tests X-AA (staff roster, trainee phases, lecture conflicts, leave/cover requests). Expected results are written in the comments of each test.
+- `database/20_tests_1K.sql`: tests AB-AE (reports/dashboard, and the admin-cannot-export privacy rule). Expected results are written in the comments of each test.
 
 ## 6. App tests (optional but recommended)
 Inside the `app` folder: `npm test`. Expect `17 passed`. These test the offline queue itself and need no
@@ -100,6 +102,23 @@ internet or Supabase project.
 | 42 | As **nurse.zara@demo.test**, from "My upcoming shifts", tap **Request a change** on her published shift, choose **Request leave**, give a reason, send |
 | 43 | As **headnurse@demo.test**, go to **Roster requests**, approve it. Refresh Zara's roster: the shift should now show as "off" instead of being removed |
 | 44 | Repeat with **Ask for cover** on a different shift, naming **nurse.ahmad@demo.test** as cover; approve it, and confirm the shift now belongs to Ahmad |
+| 45 | **Dashboard.** As **headnurse@demo.test**, go to Home > Dashboard. You should see every facility (cross-facility read), with visit counts, priority bars, incident types, length of stay, and OT/referral stats from everything you've tested so far |
+| 46 | Switch the range to 7 / 30 / 90 days and confirm the numbers change sensibly |
+| 47 | Tap **Export patient list as CSV** and open the downloaded file: it should list real patient names, matching what's in the app |
+| 48 | Sign in as **admin@demo.test**, open Dashboard: you should see only Helmand, with counts but **no "Export" button at all** - admin never sees patient names here, matching the fact that admin can't see them anywhere else in the app either |
+| 49 | As **nurse.ahmad@demo.test**, confirm **Dashboard does not appear** in her Home tiles or tab bar at all |
+| 50 | **Print fallback.** As **doctor@demo.test**, open an admitted patient's ward screen, tap **Print paper copy**. You should see a clean black-on-white summary (demographics, allergies, triage, diagnosis, active orders, recent vitals, recent notes) with **Back** and **Print** buttons |
+| 51 | Tap **Print** - your browser's print dialog should open, and the Back/Print buttons should disappear from the printed/preview page (they're `no-print`) |
+| 52 | From Patients, open any patient and look under **Visits**: each visit now has its own **Print paper copy** link |
+| 53 | **Mass casualty board.** From Home, tap **Mass casualty board**. You should see every active patient (waiting for triage, waiting for OPD, with a doctor, or admitted) grouped and colour-coded by priority, with "Not yet triaged" as its own dark-grey group |
+| 54 | Confirm it updates on its own every ~10 seconds (register and triage a new patient in another tab/session and watch it appear) |
+| 55 | **Facility switcher.** As **headnurse@demo.test**, open Wards: a dropdown should appear letting you switch to KB, PJ, or FA. Switch to KB - the ward list becomes read-only (no tap-through, a note explains why). Switch back to HL and everything is interactive again |
+| 56 | Confirm the same switcher appears on the **Operating theatre** and **Mass casualty board** screens for her |
+| 57 | As **nurse.ahmad@demo.test** (not a cross-facility role), confirm **no switcher appears** on any of those screens - she only ever sees Helmand |
+| 58 | **Feedback inbox.** As **admin@demo.test**, go to Home > Feedback inbox. Any feedback submitted earlier in this walkthrough should appear under "Open." Mark one **Reviewed**, then check the "Reviewed" tab |
+| 59 | **QR wristband.** Register a new patient (or open an existing one), tap **Print wristband / QR label**. You should see a QR code next to the patient's ID, name, age, sex, blood group |
+| 60 | **Scan to find a patient.** From Home, tap **Scan patient QR**. On a phone with camera support, allow camera access and point it at a wristband you printed - it should open that patient directly. On any device, typing the patient ID into the text box and tapping **Go** should also work |
+| 61 | **Donor / ministry report.** As **admin@demo.test**, go to Home > Donor / ministry report. You should see a clean, printable summary with counts only - no patient names anywhere on the page |
 | 13 | Test the allergy warning: register a patient with allergy "penicillin", start a visit, triage to OPD, take the patient as a doctor, and add a treatment with drug "Penicillin V". A red warning needs a tick before you can save |
 
 ## Fixed in the test files themselves (3 Oct, second pass)
