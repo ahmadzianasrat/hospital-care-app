@@ -3,6 +3,7 @@ import type { View } from '../types'
 
 export default function WardCharts({ encounterId, go }: { encounterId: string; go: (v: View) => void }) {
   const items: { label: string; sub: string; target: View }[] = [
+    { label: 'Medication list', sub: 'Every medication order and its dosing schedule, with who gave each dose', target: { name: 'ward_medications', encounterId } },
     { label: 'Vitals & GCS', sub: 'Blood pressure, pulse, breathing, oxygen, temperature, Glasgow Coma Scale, pupils', target: { name: 'chart_vitals', encounterId } },
     { label: 'Circulation', sub: 'Limb movement, sensation, capillary refill, bleeding', target: { name: 'chart_circulation', encounterId } },
     { label: 'Fluid balance', sub: 'IV fluids, oral intake, urine, stool, drains, running balance', target: { name: 'chart_fluids', encounterId } },

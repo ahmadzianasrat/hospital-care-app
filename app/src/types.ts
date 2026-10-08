@@ -302,10 +302,15 @@ export type ExportRow = {
 export type FacilityRow = { id: string; code: string; name: string; type: string }
 export type FeedbackRow = { id: string; message: string; screen: string | null; status: string; created_at: string; staff?: { full_name: string } | null }
 
+export type StaffingRow = { ward_name: string; work_date: string; shift_name: string; assigned: number; required: number }
+
 export type View =
   | { name: 'home' }
   | { name: 'feedback' }
   | { name: 'feedback_review' }
+  | { name: 'ward_medications'; encounterId: string }
+  | { name: 'ward_staffing' }
+  | { name: 'manage_wards' }
   | { name: 'wristband'; patientId: string }
   | { name: 'scan_patient' }
   | { name: 'donor_report' }

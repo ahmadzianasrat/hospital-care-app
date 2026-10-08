@@ -5,11 +5,14 @@ import type { ShiftTypeRow, StaffRow, View, WardRow } from '../types'
 import { BackBar, Card, ErrorBox } from './ui'
 
 const SHIFT_COLOR: Record<string, string> = {
-  morning: 'bg-amber-100 text-amber-800', night: 'bg-indigo-100 text-indigo-800', off: 'bg-slate-100 text-slate-500',
+  morning: 'bg-amber-100 text-amber-800', night: 'bg-indigo-100 text-indigo-800',
+  sleep: 'bg-sky-100 text-sky-800', off: 'bg-slate-100 text-slate-500',
 }
+const LEAVE_CODES = ['paid_leave', 'unpaid_leave', 'maternity_leave', 'national_holiday', 'study_leave']
 type DayCell = { date: string; shiftTypeId: string | null; shiftCode: string | null; status: string | null }
 const dateStr = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: FACILITY_TZ })
 const dayLabel = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export default function RosterBuilder({ facilityId, go }: { facilityId: string; go: (v: View) => void }) {
   const [staff, setStaff] = useState<StaffRow[]>([])
@@ -24,10 +27,16 @@ export default function RosterBuilder({ facilityId, go }: { facilityId: string; 
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const now = new Date()
+  const [genYear, setGenYear] = useState(now.getFullYear())
+  const [genMonth, setGenMonth] = useState(now.getMonth() + 1)
+  const [genStartCode, setGenStartCode] = useState('')
+  const [genMsg, setGenMsg] = useState<string | null>(null)
+
   useEffect(() => {
     supabase.from('staff').select('id, full_name, app_role, profession, active').eq('facility_id', facilityId).eq('active', true).order('full_name')
       .then(({ data }) => setStaff((data ?? []) as StaffRow[]))
-    supabase.from('shift_types').select('*').eq('facility_id', facilityId).order('code')
+    supabase.from('shift_types').select('*').eq('facility_id', facilityId).order('rotation_order')
       .then(({ data }) => setShiftTypes((data ?? []) as ShiftTypeRow[]))
     supabase.from('wards').select('id, code, name').eq('facility_id', facilityId).order('code')
       .then(({ data }) => setWards((data ?? []) as WardRow[]))
@@ -84,6 +93,23 @@ export default function RosterBuilder({ facilityId, go }: { facilityId: string; 
     loadWeek()
   }
 
+  async function generateMonth() {
+    setBusy(true)
+    setError(null)
+    setGenMsg(null)
+    const { data, error } = await supabase.rpc('generate_month_roster', {
+      p_staff_id: selectedStaff, p_year: genYear, p_month: genMonth,
+      p_ward_id: wardChoice || null, p_start_code: genStartCode || null,
+    })
+    setBusy(false)
+    if (error) return setError(errMsg(error))
+    setGenMsg(`Generated ${data} day(s) as drafts, continuing their usual morning/night/sleep/off cycle. Review and publish week by week below, or swap in specific days (e.g. leave) using "Change" on any day.`)
+    loadWeek()
+  }
+
+  const cycleShifts = shiftTypes.filter((s) => !LEAVE_CODES.includes(s.code))
+  const leaveShifts = shiftTypes.filter((s) => LEAVE_CODES.includes(s.code))
+
   return (
     <div className="space-y-3">
       <BackBar title="Build roster" onBack={() => go({ name: 'home' })} />
@@ -104,6 +130,33 @@ export default function RosterBuilder({ facilityId, go }: { facilityId: string; 
 
       {selectedStaff && (
         <>
+          <Card className="space-y-3">
+            <h2 className="font-semibold">Generate a whole month</h2>
+            <p className="text-xs text-slate-500">
+              Fills every day with the morning → night → sleep → off cycle, continuing from this person's
+              last cycle shift (or pick a starting point below for someone with no history yet). Creates
+              drafts only - nothing is published automatically.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={genMonth} onChange={(e) => setGenMonth(Number(e.target.value))} className="rounded-lg border border-slate-300 px-2 py-2 text-sm bg-white">
+                {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </select>
+              <input type="number" value={genYear} onChange={(e) => setGenYear(Number(e.target.value))} className="rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </div>
+            <select value={genStartCode} onChange={(e) => setGenStartCode(e.target.value)} className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm bg-white">
+              <option value="">Continue from last month automatically</option>
+              {cycleShifts.map((s) => <option key={s.id} value={s.code}>Start this month on: {s.name}</option>)}
+            </select>
+            <select value={wardChoice} onChange={(e) => setWardChoice(e.target.value)} className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm bg-white">
+              <option value="">No ward</option>
+              {wards.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+            <button onClick={generateMonth} disabled={busy} className="w-full rounded-xl bg-teal-700 text-white font-semibold py-3 disabled:opacity-50">
+              {busy ? 'Generating…' : 'Generate month'}
+            </button>
+            {genMsg && <p className="text-xs text-emerald-800 bg-emerald-50 rounded-lg p-2">{genMsg}</p>}
+          </Card>
+
           <div className="flex items-center justify-between">
             <button onClick={() => setWeekOffset((w) => w - 1)} className="rounded-lg bg-white border border-slate-300 px-3 py-2 text-sm">← Previous</button>
             <span className="text-sm font-medium">{weekOffset === 0 ? 'This week' : weekOffset > 0 ? `+${weekOffset} week(s)` : `${weekOffset} week(s)`}</span>
@@ -118,8 +171,8 @@ export default function RosterBuilder({ facilityId, go }: { facilityId: string; 
                   <span className="text-sm font-medium">{dayLabel(d.date)}</span>
                   <span className="flex items-center gap-2">
                     {d.shiftCode && (
-                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${SHIFT_COLOR[d.shiftCode] ?? 'bg-slate-100'}`}>
-                        {d.shiftCode}{d.status === 'draft' ? ' (draft)' : ''}
+                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${SHIFT_COLOR[d.shiftCode] ?? 'bg-purple-100 text-purple-800'}`}>
+                        {shiftTypes.find((s) => s.code === d.shiftCode)?.name ?? d.shiftCode}{d.status === 'draft' ? ' (draft)' : ''}
                       </span>
                     )}
                     <button onClick={() => setOpenDay(openDay === d.date ? null : d.date)} className="text-xs text-teal-700 underline">
@@ -129,9 +182,18 @@ export default function RosterBuilder({ facilityId, go }: { facilityId: string; 
                 </div>
                 {openDay === d.date && (
                   <div className="space-y-2 border-t pt-2">
+                    <p className="text-xs text-slate-500">Shift</p>
                     <div className="flex flex-wrap gap-2">
-                      {shiftTypes.map((st) => (
+                      {cycleShifts.map((st) => (
                         <button key={st.id} onClick={() => setShift(d.date, st.id)} disabled={busy} className="rounded-lg bg-slate-800 text-white text-xs px-3 py-2 disabled:opacity-50">
+                          {st.name}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 pt-1">Leave</p>
+                    <div className="flex flex-wrap gap-2">
+                      {leaveShifts.map((st) => (
+                        <button key={st.id} onClick={() => setShift(d.date, st.id)} disabled={busy} className="rounded-lg bg-purple-700 text-white text-xs px-3 py-2 disabled:opacity-50">
                           {st.name}
                         </button>
                       ))}

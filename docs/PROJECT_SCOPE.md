@@ -132,6 +132,30 @@ No approval from HQ, sync bugs, slower than paper, long support obligations, dat
 - Not yet included: a full "round mode" screen that walks through every patient in order during the
   multidisciplinary round; that is a good candidate for the next increment once this is tested.
 
+## Medication list + roster automation + ward staffing (step 1N)
+
+Three real gaps found during the first hands-on pass of the deployed app:
+
+- **Medication list:** a dedicated medication administration record, separate from the mixed "active
+  orders" list - every medication order with its own dosing schedule, each dose time, and who gave (or
+  skipped) it. No database change was needed; this reuses the orders/tasks engine from step 1F.
+- **Roster auto-generation:** a "Generate a whole month" button fills every day with the repeating
+  Morning -> Night -> Sleep (the mandatory rest day right after a night shift) -> Off cycle, continuing
+  automatically from wherever each person's cycle left off the previous month (so someone who was "Sleep"
+  on the last day of September correctly starts October on "Off"). Someone with no roster history yet
+  defaults to starting on Morning, or the head nurse can pick an explicit starting shift instead. Every
+  generated day is a draft, and any single day can still be changed by hand afterward - to a different
+  cycle shift, or to one of five new leave types (paid leave, unpaid leave, maternity leave, national
+  holiday, study leave) - exactly the same way as before, nothing new to learn there.
+- **Ward staffing minimums:** a head nurse can set how many staff a ward needs on a given shift (for
+  example 2 nurses on Ward Alpha's morning shift, 4 on Sub-ICU's), and a weekly overview shows every
+  ward/shift combination with how many are actually published against that minimum, in red when short.
+  A new "Manage wards" screen lets admin/head nurse add a ward that doesn't exist yet (like Sub-ICU),
+  since that was previously only possible by editing the database directly.
+- A genuine bug was found and fixed while testing this: `ward_staffing_overview` mismatched its own
+  declared return type, because `generate_series(date, date, interval)` actually returns `timestamp` in
+  Postgres, not `date` - an easy trap, caught immediately by testing rather than by someone hitting it live.
+
 ## Multi-facility rollout enabler + polish (step 1M)
 
 - **Facility switcher:** head nurse, chief surgeon, and coordinator - the roles that already have

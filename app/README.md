@@ -1,9 +1,10 @@
-# Hospital Care App (Phase 1 complete: 1A-1M; Phase 2 underway)
+# Hospital Care App (Phase 1 complete: 1A-1N; live on Vercel; Phase 2 underway)
 
 Screens: login, duty status, break-glass, patient registration, triage, OPD, referrals, an offline queue, wards,
-nursing charts, round mode, in-app feedback (+ review inbox), OT scheduling, staff roster + nursing trainee
-programs, a reporting dashboard with CSV export, a printable paper fallback, a mass casualty board, a
-cross-facility switcher, QR wristbands with scan-to-find, and a donor/ministry report.
+nursing charts, a dedicated medication list, round mode, in-app feedback (+ review inbox), OT scheduling, staff
+roster with month auto-generation + nursing trainee programs, ward staffing minimums, a reporting dashboard
+with CSV export, a printable paper fallback, a mass casualty board, a cross-facility switcher, QR wristbands
+with scan-to-find, and a donor/ministry report.
 
 Full setup steps, including GitHub, are in `../docs/SETUP.md` and `../docs/GITHUB.md`. The pilot playbook is
 `../docs/PILOT_PLAN.md`.
@@ -15,32 +16,31 @@ Full setup steps, including GitHub, are in `../docs/SETUP.md` and `../docs/GITHU
 
 ## Run the automated tests
 `npm test` runs the offline-engine tests (18 checks). Everything with a database component is tested in the
-numbered SQL files under `../database/`. Step 1M, like step 1L, needed **no new database file at all**.
+numbered SQL files under `../database/`.
+
+## Step 1N: medication list + roster automation + ward staffing
+Three real gaps found during the first hands-on pass of the deployed app:
+- `src/components/MedicationList.tsx`: a dedicated medication administration record, no database change needed
+- `src/components/RosterBuilder.tsx` (extended): "Generate a whole month" fills the Morning → Night → Sleep →
+  Off cycle, continuing from each person's last cycle shift automatically, or an explicit starting point;
+  five new leave types (paid/unpaid/maternity/national holiday/study); any day still changeable by hand after
+- `src/components/WardStaffing.tsx`, `ManageWards.tsx`: set a ward's minimum staff per shift, see a weekly
+  overview flagged red when short, and add a new ward (like Sub-ICU) from inside the app
+- Database: `database/21_roster_automation.sql`, tested in `database/22_tests_1N.sql`
+- One real bug found and fixed: `generate_series(date, date, interval)` actually returns `timestamp` in
+  Postgres, not `date`, which didn't match the function's declared return type
 
 ## Step 1M: multi-facility rollout enabler + polish
-- `src/components/FacilitySwitcher.tsx`: view-only cross-facility switching for head nurse/chief
-  surgeon/coordinator on Wards, OT, and the Mass Casualty Board. Writes elsewhere are still correctly
-  blocked by the database regardless of what's on screen, since every write checks the signed-in staff
-  member's own facility.
-- `src/components/FeedbackReview.tsx`: admin/head nurse can review, resolve, or reopen feedback in-app.
-- `src/components/Wristband.tsx`: a printable QR label (via the `qrcode` package) encoding only the
-  patient's display ID.
-- `src/components/ScanPatient.tsx`: camera-based QR scanning via the browser's native `BarcodeDetector`
-  where supported, with a manual ID-entry fallback everywhere else.
-- `src/components/DonorReport.tsx`: an aggregate-only, printable version of the dashboard - no patient
-  names, so admin can use it too (same rule as the main dashboard's CSV export).
-- No new database file - everything reuses functions and policies from steps 1C, 1H, and 1K.
+- `src/components/FacilitySwitcher.tsx`, `FeedbackReview.tsx`, `Wristband.tsx`, `ScanPatient.tsx`, `DonorReport.tsx`
 
 ## Step 1L: printable paper fallback + mass casualty board
-- `src/components/PrintChart.tsx`, `MassCasualtyBoard.tsx` - also no new database file.
+- `src/components/PrintChart.tsx`, `MassCasualtyBoard.tsx`
 
 ## Step 1K: reports & dashboard
-- `src/components/Dashboard.tsx`
-- Database: `database/19_reports.sql`, tested in `database/20_tests_1K.sql`
+- `src/components/Dashboard.tsx` · Database: `database/19_reports.sql`, tested in `database/20_tests_1K.sql`
 
 ## Step 1J: staff roster + nursing trainee programs
-- `src/components/RosterBuilder.tsx`, `RosterRequests.tsx`, `Roster.tsx`, `TraineePrograms.tsx`,
-  `TrainerHub.tsx`, `LectureAttendance.tsx`
+- `src/components/RosterRequests.tsx`, `Roster.tsx`, `TraineePrograms.tsx`, `TrainerHub.tsx`, `LectureAttendance.tsx`
 - Database: `database/17_roster_training.sql`, tested in `database/18_tests_1J.sql`
 
 ## Step 1I: OT scheduling
@@ -61,10 +61,8 @@ numbered SQL files under `../database/`. Step 1M, like step 1L, needed **no new 
 
 ## A note on test-file quality (read this if a test ever looks wrong)
 Several real bugs have been found in the numbered SQL test files themselves (not the app) over the course of
-this project: placeholder values too short to pass validation, an ambiguous column name, test code reading
-`auth.users` after a role switch (which real Supabase blocks but an earlier version of my own test harness
-didn't), and tests that put an expected failure mid-transaction so later checks silently never ran. All found
-by actually running the files against Supabase. If a test ever gives an unexpected error, paste it back.
+this project, all found by actually running the files against Supabase. If a test ever gives an unexpected
+error, paste it back.
 
 ## How offline works, in short
 - Every action that changes data goes through `src/lib/offline/engine.ts`. A network failure saves it in the
@@ -75,5 +73,4 @@ by actually running the files against Supabase. If a test ever gives an unexpect
 ## Files worth knowing
 - `src/lib/offline/engine.ts` + `engine.test.ts`: the offline queue, fully unit-tested
 - `src/hooks.ts` (`useAccessStatus`): the duty-status check that tolerates being offline
-- `src/components/SyncBar.tsx`, `Outbox.tsx`, `OfflineReady.tsx`: the offline UI
 - `src/components/Workspace.tsx`: tabs, module switching per facility type

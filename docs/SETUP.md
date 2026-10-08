@@ -25,8 +25,9 @@ Run in this order, one file at a time. Each should say "Success":
 9. `database/15_ot_scheduling.sql`
 10. `database/17_roster_training.sql`
 11. `database/19_reports.sql`
+12. `database/21_roster_automation.sql`
 
-(Steps 06, 08, 10, 12, 14, 16, 18 and 20 are test files, covered below.)
+(Steps 06, 08, 10, 12, 14, 16, 18, 20 and 22 are test files, covered below.)
 
 If a file fails: copy the exact error text and send it to me. Do not re-run blindly.
 
@@ -40,6 +41,7 @@ If a file fails: copy the exact error text and send it to me. Do not re-run blin
 - `database/16_tests_1I.sql`: tests T-W (OT scheduling, and two more bug fixes - see "Fixed after the third round of testing" below). Expected results are written in the comments of each test.
 - `database/18_tests_1J.sql`: tests X-AA (staff roster, trainee phases, lecture conflicts, leave/cover requests). Expected results are written in the comments of each test.
 - `database/20_tests_1K.sql`: tests AB-AE (reports/dashboard, and the admin-cannot-export privacy rule). Expected results are written in the comments of each test.
+- `database/22_tests_1N.sql`: tests AF-AJ (roster rotation continuation, manual overrides, ward staffing). Expected results are written in the comments of each test.
 
 ## 6. App tests (optional but recommended)
 Inside the `app` folder: `npm test`. Expect `17 passed`. These test the offline queue itself and need no
@@ -119,6 +121,11 @@ internet or Supabase project.
 | 59 | **QR wristband.** Register a new patient (or open an existing one), tap **Print wristband / QR label**. You should see a QR code next to the patient's ID, name, age, sex, blood group |
 | 60 | **Scan to find a patient.** From Home, tap **Scan patient QR**. On a phone with camera support, allow camera access and point it at a wristband you printed - it should open that patient directly. On any device, typing the patient ID into the text box and tapping **Go** should also work |
 | 61 | **Donor / ministry report.** As **admin@demo.test**, go to Home > Donor / ministry report. You should see a clean, printable summary with counts only - no patient names anywhere on the page |
+| 62 | **Medication list.** As **doctor@demo.test**, add a medication order (TID, 2 days) to an admitted patient, then open Charts > Medication list: you should see the drug with every dose time listed separately, distinct from the general orders list |
+| 63 | **Roster auto-generation.** As **headnurse@demo.test**, go to Build roster, pick Nurse Ahmad, and manually set tomorrow to **Sleep**. Then use **Generate a whole month** for next month: the first day should come out as **Off** (continuing the cycle), then Morning, Night, Sleep, Off, repeating |
+| 64 | Pick a nurse with no roster history and generate a month for them: it should start on **Morning** |
+| 65 | After generating, tap **Change** on any single day and pick a leave type (e.g. **Paid leave**): it should update just that one day, confirming manual overrides still work normally after auto-generation |
+| 66 | **Ward staffing.** Go to Home > Manage wards, add a ward named "Sub-ICU". Go to Ward staffing, set Sub-ICU's morning minimum to 4. With fewer than 4 nurses published on a given day, that row should show red; once you publish enough to meet it, it turns green |
 | 13 | Test the allergy warning: register a patient with allergy "penicillin", start a visit, triage to OPD, take the patient as a doctor, and add a treatment with drug "Penicillin V". A red warning needs a tick before you can save |
 
 ## Fixed in the test files themselves (3 Oct, second pass)

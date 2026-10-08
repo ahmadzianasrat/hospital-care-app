@@ -47,6 +47,9 @@ import FeedbackReview from './FeedbackReview'
 import Wristband from './Wristband'
 import ScanPatient from './ScanPatient'
 import DonorReport from './DonorReport'
+import MedicationList from './MedicationList'
+import WardStaffing from './WardStaffing'
+import ManageWards from './ManageWards'
 import Roster from './Roster'
 import DataCheck from './DataCheck'
 
@@ -120,7 +123,7 @@ export default function Workspace({ status }: { status: AccessStatus }) {
       active: [
         'wards', 'ward', 'ward_patient', 'assign_bed', 'order_form', 'ward_charts',
         'chart_vitals', 'chart_circulation', 'chart_fluids', 'chart_barthel', 'chart_notes',
-        'round_mode',
+        'round_mode', 'ward_medications',
       ].includes(view.name),
     },
     {
@@ -221,6 +224,9 @@ export default function Workspace({ status }: { status: AccessStatus }) {
       {view.name === 'wristband' && <Wristband patientId={view.patientId} go={go} />}
       {view.name === 'scan_patient' && <ScanPatient go={go} />}
       {view.name === 'donor_report' && <DonorReport go={go} />}
+      {view.name === 'ward_medications' && <MedicationList encounterId={view.encounterId} go={go} canDoTask={canWards} />}
+      {view.name === 'ward_staffing' && <WardStaffing facilityId={status.facility_id} go={go} />}
+      {view.name === 'manage_wards' && <ManageWards facilityId={status.facility_id} go={go} />}
 
       <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200">
         <div className="max-w-md mx-auto flex">
@@ -267,6 +273,8 @@ function DutyHome({
     { label: 'Feedback inbox', target: { name: 'feedback_review' }, enabled: canReviewFeedback },
     { label: 'Scan patient QR', target: { name: 'scan_patient' }, enabled: canPatients },
     { label: 'Donor / ministry report', target: { name: 'donor_report' }, enabled: canDonorReport },
+    { label: 'Ward staffing', target: { name: 'ward_staffing' }, enabled: canBuildRoster },
+    { label: 'Manage wards', target: { name: 'manage_wards' }, enabled: canBuildRoster },
   ]
 
   return (
