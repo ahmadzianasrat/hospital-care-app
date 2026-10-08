@@ -18,7 +18,7 @@ export default function App() {
           <p className="font-semibold mb-1">Setup needed</p>
           <p>
             Copy <code>.env.example</code> to <code>.env</code>, fill in your Supabase URL and anon key, then restart
-            <code> npm run dev</code>.
+            <code> npm run dev.</code>.
           </p>
         </div>
       </Shell>
